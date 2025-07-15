@@ -1,5 +1,5 @@
 asyncpg
-fastapi==0.110.0
+fastapi
 google-generativeai==0.7.0
 httpx==0.27.0
 passlib[bcrypt]
