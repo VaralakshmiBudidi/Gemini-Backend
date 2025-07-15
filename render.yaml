@@ -2,10 +2,10 @@ services:
   - type: web
     name: gemini-backend
     runtime: python
-    # CHANGE THIS LINE to a stable Python version, e.g., 3.11
+    # This line MUST be changed from py -3.13 to py -3.11 (or 3.10/3.12)
     buildCommand: py -3.11 -m pip install -r requirements.txt
 
-    # CHANGE THIS LINE to the same stable Python version, e.g., 3.11
+    # This line MUST also be changed to match the version above
     startCommand: py -3.11 -m uvicorn app.main:app --host 0.0.0.0 --port 10000
     envVars:
       - key: DATABASE_URL
