@@ -3,8 +3,8 @@ services:
     name: gemini-backend
     runtime: python
     pythonVersion: 3.11.9 # ADD THIS LINE to explicitly pin Python 3.11
-    buildCommand: python -m pip install -r requirements.txt # Use 'python' (which will be 3.11)
-    startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port 10000 # Use 'python' (which will be 3.11)
+    buildCommand: python3.11 -m pip install -r requirements.txt # CHANGE THIS
+    startCommand: python3.11 -m uvicorn app.main:app --host 0.0.0.0 --port 10000
     envVars:
       - key: DATABASE_URL
         fromDotEnv: true
