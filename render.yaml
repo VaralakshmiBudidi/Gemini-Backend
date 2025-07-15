@@ -2,9 +2,10 @@ services:
   - type: web
     name: gemini-backend
     runtime: python
-    pythonVersion: 3.11.9
-    buildCommand: python -m pip install -r requirements.txt
-    startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port 10000
+    # CHANGE THIS LINE from 3.13 to 3.11 or 3.10
+    buildCommand: py -3.13 -m pip install -r requirements.txt
+
+    startCommand: py -3.13 -m uvicorn app.main:app --host 0.0.0.0 --port 10000
     envVars:
       - key: DATABASE_URL
         fromDotEnv: true
