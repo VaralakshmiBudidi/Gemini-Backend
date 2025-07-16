@@ -4,9 +4,14 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_current_user, get_db
 from app.models import User
 from app.schemas import SubscriptionStatusResponse
+from dotenv import load_dotenv
 import stripe
 import os
 import json
+
+load_dotenv()
+
+HOST_URL = os.getenv("HOST_URL") if os.getenv("HOST_URL") else "http://localhost:8000"
 
 router = APIRouter(tags=["Subscription"])
 
@@ -15,12 +20,12 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 # ✅ Environment configs
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")  # e.g., price_123abc
-SUCCESS_URL = "http://localhost:8000/subscription/status"  # replace in production
-CANCEL_URL = "http://localhost:8000/user/me"    # replace in production
+SUCCESS_URL = f"{HOST_URL}/docs"  # replace in production
+CANCEL_URL = f"{HOST_URL}/user/me"    # replace in production
 
 # 1. Create Stripe Checkout Session
 @router.post("/subscribe/pro")
-def create_checkout_session(user: User = Depends(get_current_user)):
+def create_checkout_session(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if not STRIPE_PRICE_ID:
         raise HTTPException(status_code=500, detail="Stripe price ID is not set in .env")
 
@@ -36,6 +41,7 @@ def create_checkout_session(user: User = Depends(get_current_user)):
             cancel_url=CANCEL_URL,
             metadata={"user_id": user.id}
         )
+
         return {"checkout_url": session.url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -55,7 +61,9 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 user = db.query(User).filter(User.id == int(user_id)).first()
                 if user:
                     user.tier = "Pro"
+                    user.is_pro = True
                     db.commit()
+                    print(f"User {user_id} upgraded to Pro tier successfully")
         return {"status": "success"}
 
     except Exception as e:
