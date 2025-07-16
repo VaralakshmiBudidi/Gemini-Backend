@@ -94,47 +94,51 @@ def get_chatroom(id: int, db: Session = Depends(get_db), user=Depends(get_curren
 
 
 # ✅ POST /chatroom/{room_id}/message — Send prompt and get AI reply (Enhanced with features from messages.py)
-@router.post("/{room_id}/message", response_model=schemas.GeminiResponse) # Changed response_model
+@router.post("/{room_id}/message", response_model=schemas.GeminiResponse)
 def send_message_to_chatroom(
     room_id: int,
-    body: schemas.MessageCreate, # Using MessageCreate
-    background_tasks: BackgroundTasks, # Added BackgroundTasks
+    body: schemas.MessageCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user=Depends(get_current_user)
 ):
+    # 1. Check chatroom membership
     membership = db.query(models.ChatMember).filter_by(user_id=user.id, chatroom_id=room_id).first()
     if not membership:
         raise HTTPException(status_code=403, detail="Not a member of this chatroom")
 
-    # 🔒 Consolidated Rate Limit (using Redis and is_pro from messages.py logic)
-    # Ensure User model has 'is_pro' field (we added this previously)
-    if not user.is_pro: # Using user.is_pro for rate limiting
-        redis = redis_client() # Get redis client
-        key = f"rate:{user.id}:{time.strftime('%Y-%m-%d')}"
-        count = int(redis.get(key) or 0)
-        if count >= 5: # Daily limit 5
+    # 2. If user is NOT pro → check rate limit
+    if user.tier != "Pro":  # ← assumes user.tier is a string like "basic" or "pro"
+        redis = redis_client()
+        today = time.strftime('%Y-%m-%d')
+        redis_key = f"rate:{user.id}:{today}"
+
+        count = int(redis.get(redis_key) or 0)
+
+        if count >= 5:
             raise HTTPException(
                 status_code=429,
                 detail="Daily message limit reached. Upgrade to Pro for unlimited access."
             )
-        redis.incr(key)
-        redis.expire(key, 86400) # Expire after 24 hours
 
-    # Get Gemini AI response immediately for the client
+        # Increment count and set expiry
+        redis.incr(redis_key)
+        redis.expire(redis_key, 86400)  # 24 hours in seconds
+
+    # 3. Call Gemini API
     try:
         response_text = generate_content(body.content).strip()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gemini API error: {str(e)}")
 
-    # Save user's message and assistant's response in a background task
-    # This allows the API to respond faster to the user
+    # 4. Save message asynchronously
     background_tasks.add_task(
         _save_messages_background,
         room_id,
         user.id,
         body.content,
         response_text,
-        db # Pass the database session
+        db
     )
 
-    return schemas.GeminiResponse(response=response_text) # Return GeminiResponse
+    return schemas.GeminiResponse(response=response_text)
