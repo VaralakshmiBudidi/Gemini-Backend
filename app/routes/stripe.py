@@ -30,6 +30,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             user = db.query(User).filter(User.id == int(user_id)).first()
             if user:
                 user.tier = "Pro"
+                user.is_pro= True
                 db.commit()
 
     return {"status": "success"}
