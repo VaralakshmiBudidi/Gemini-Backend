@@ -77,9 +77,6 @@ async def stripe_webhook(
             if user_id:
                 user = db.query(User).filter(User.id == int(user_id)).first()
                 if user:
-                    user.tier = "Pro"
-                    user.is_pro = True
-                    db.commit()
                     print(f"User {user_id} upgraded to Pro tier successfully")
         
         return {"status": "success"}
