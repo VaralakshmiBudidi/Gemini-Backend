@@ -162,6 +162,10 @@ For support and questions:
 - Review the project structure and code comments
 - Open an issue on the repository
 
+## Application Link
+
+   https://gemini-backend-85ypdfvb.vercel.app/docs
+
 ## 🔮 Future Enhancements
 
 - WebSocket support for real-time messaging
